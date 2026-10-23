@@ -75,14 +75,7 @@
   })();
 
   const state = {
-    user: savedUser || {
-      id: 'USR-001',
-      name: 'Administrador Boca2',
-      email: 'admin@boca2wings.com',
-      role_id: 'admin',
-      role_name: 'Administrador',
-      permissions: ['all']
-    },
+    user: null,
     activeTab: 'pos', // Default to POS for quick operation
     categories: [],
     products: [],
