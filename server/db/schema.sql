@@ -1,0 +1,309 @@
+-- ==============================================================================
+-- BOCA2 WINGS POS — ESQUEMA COMPLETO DE BASE DE DATOS RELACIONAL (POSTGRESQL / SUPABASE)
+-- ==============================================================================
+
+-- 1. ROLES Y USUARIOS
+CREATE TABLE IF NOT EXISTS roles (
+  id VARCHAR(50) PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  description TEXT,
+  permissions JSONB NOT NULL DEFAULT '[]',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS users (
+  id VARCHAR(50) PRIMARY KEY,
+  role_id VARCHAR(50) NOT NULL REFERENCES roles(id),
+  name VARCHAR(150) NOT NULL,
+  email VARCHAR(150) UNIQUE NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  active BOOLEAN DEFAULT TRUE,
+  avatar_url TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 2. CATEGORÍAS
+CREATE TABLE IF NOT EXISTS categories (
+  id VARCHAR(50) PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  slug VARCHAR(100) UNIQUE NOT NULL,
+  description TEXT,
+  icon VARCHAR(50),
+  sort_order INT DEFAULT 0,
+  active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 3. INVENTARIO E INGREDIENTES
+CREATE TABLE IF NOT EXISTS ingredients (
+  id VARCHAR(50) PRIMARY KEY,
+  code VARCHAR(50) UNIQUE NOT NULL,
+  name VARCHAR(150) NOT NULL,
+  category VARCHAR(100) NOT NULL,
+  unit VARCHAR(20) NOT NULL, -- g, kg, ml, l, und, paquete, botella, porcion
+  stock_current NUMERIC(14, 4) NOT NULL DEFAULT 0,
+  stock_min NUMERIC(14, 4) NOT NULL DEFAULT 0,
+  stock_max NUMERIC(14, 4),
+  cost_unit NUMERIC(14, 2) NOT NULL DEFAULT 0, -- Costo en COP por unidad base
+  supplier_id VARCHAR(50),
+  location VARCHAR(100) DEFAULT 'Bodega Principal',
+  expiration_date DATE,
+  active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 4. PRODUCTOS Y VARIANTES
+CREATE TABLE IF NOT EXISTS products (
+  id VARCHAR(50) PRIMARY KEY,
+  code VARCHAR(50) UNIQUE NOT NULL,
+  name VARCHAR(150) NOT NULL,
+  description TEXT,
+  category_id VARCHAR(50) NOT NULL REFERENCES categories(id),
+  price NUMERIC(14, 2) NOT NULL DEFAULT 0,
+  cost_estimated NUMERIC(14, 2) NOT NULL DEFAULT 0,
+  image_url TEXT,
+  prep_time_minutes INT DEFAULT 15,
+  prep_station VARCHAR(50) DEFAULT 'Frituras', -- Alitas, Frituras, Hamburguesas, Bebidas, Empaque
+  active BOOLEAN DEFAULT TRUE,
+  has_variants BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS product_variants (
+  id VARCHAR(50) PRIMARY KEY,
+  product_id VARCHAR(50) NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+  name VARCHAR(100) NOT NULL, -- Ej: Pequeña (150g), Mediana (200g), Grande (300g), 6 Pcs, 12 Pcs
+  sku VARCHAR(50),
+  price NUMERIC(14, 2) NOT NULL DEFAULT 0,
+  cost_estimated NUMERIC(14, 2) NOT NULL DEFAULT 0,
+  active BOOLEAN DEFAULT TRUE
+);
+
+-- 5. RECETAS Y FICHAS TÉCNICAS
+CREATE TABLE IF NOT EXISTS recipes (
+  id VARCHAR(50) PRIMARY KEY,
+  product_id VARCHAR(50) NOT NULL REFERENCES products(id),
+  variant_id VARCHAR(50) REFERENCES product_variants(id),
+  name VARCHAR(150) NOT NULL,
+  version INT DEFAULT 1,
+  instructions TEXT,
+  yield_portions INT DEFAULT 1,
+  portion_size VARCHAR(100),
+  prep_time_minutes INT DEFAULT 15,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS recipe_ingredients (
+  id VARCHAR(50) PRIMARY KEY,
+  recipe_id VARCHAR(50) NOT NULL REFERENCES recipes(id) ON DELETE CASCADE,
+  ingredient_id VARCHAR(50) NOT NULL REFERENCES ingredients(id),
+  quantity NUMERIC(14, 4) NOT NULL, -- Cantidad en la unidad del ingrediente
+  unit VARCHAR(20) NOT NULL,
+  cost_unit NUMERIC(14, 2) NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 6. CLIENTES
+CREATE TABLE IF NOT EXISTS customers (
+  id VARCHAR(50) PRIMARY KEY,
+  name VARCHAR(150) NOT NULL,
+  phone VARCHAR(50),
+  email VARCHAR(150),
+  address TEXT,
+  notes TEXT,
+  order_count INT DEFAULT 0,
+  total_spent NUMERIC(14, 2) DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 7. CAJA REGISTRADORA Y TURNOS
+CREATE TABLE IF NOT EXISTS cash_registers (
+  id VARCHAR(50) PRIMARY KEY,
+  code VARCHAR(50) NOT NULL,
+  opened_by_user_id VARCHAR(50) NOT NULL REFERENCES users(id),
+  closed_by_user_id VARCHAR(50) REFERENCES users(id),
+  opened_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  closed_at TIMESTAMP WITH TIME ZONE,
+  status VARCHAR(20) NOT NULL DEFAULT 'ABIERTA', -- ABIERTA, CERRADA, AUDITADA
+  initial_fund NUMERIC(14, 2) NOT NULL DEFAULT 0,
+  cash_sales NUMERIC(14, 2) NOT NULL DEFAULT 0,
+  transfer_sales NUMERIC(14, 2) NOT NULL DEFAULT 0,
+  card_sales NUMERIC(14, 2) NOT NULL DEFAULT 0,
+  other_sales NUMERIC(14, 2) NOT NULL DEFAULT 0,
+  cash_entries NUMERIC(14, 2) NOT NULL DEFAULT 0,
+  cash_withdrawals NUMERIC(14, 2) NOT NULL DEFAULT 0,
+  cash_expenses NUMERIC(14, 2) NOT NULL DEFAULT 0,
+  cash_refunds NUMERIC(14, 2) NOT NULL DEFAULT 0,
+  expected_cash NUMERIC(14, 2) NOT NULL DEFAULT 0,
+  counted_cash NUMERIC(14, 2),
+  cash_difference NUMERIC(14, 2),
+  notes TEXT,
+  reopen_reason TEXT
+);
+
+CREATE TABLE IF NOT EXISTS cash_register_movements (
+  id VARCHAR(50) PRIMARY KEY,
+  cash_register_id VARCHAR(50) NOT NULL REFERENCES cash_registers(id),
+  user_id VARCHAR(50) NOT NULL REFERENCES users(id),
+  type VARCHAR(50) NOT NULL, -- INGRESO, RETIRO, GASTO, VENTA_EFECTIVO, REEMBOLSO
+  amount NUMERIC(14, 2) NOT NULL,
+  description TEXT,
+  reference_id VARCHAR(50),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 8. VENTAS Y PEDIDOS (POS)
+CREATE TABLE IF NOT EXISTS orders (
+  id VARCHAR(50) PRIMARY KEY, -- BW-000001
+  idempotency_key VARCHAR(100) UNIQUE,
+  cash_register_id VARCHAR(50) REFERENCES cash_registers(id),
+  user_id VARCHAR(50) NOT NULL REFERENCES users(id),
+  customer_id VARCHAR(50) REFERENCES customers(id),
+  order_type VARCHAR(50) NOT NULL DEFAULT 'MESA', -- MESA, LLEVAR, RECOGER, DOMICILIO
+  table_number VARCHAR(50),
+  delivery_address TEXT,
+  delivery_fee NUMERIC(14, 2) DEFAULT 0,
+  status VARCHAR(50) NOT NULL DEFAULT 'PENDIENTE', -- PENDIENTE, EN_PREPARACION, LISTO, ENTREGADO, CANCELADO
+  payment_status VARCHAR(50) NOT NULL DEFAULT 'PAGADO', -- PAGADO, PARCIAL, PENDIENTE
+  subtotal NUMERIC(14, 2) NOT NULL DEFAULT 0,
+  discount NUMERIC(14, 2) NOT NULL DEFAULT 0,
+  tax NUMERIC(14, 2) NOT NULL DEFAULT 0,
+  total NUMERIC(14, 2) NOT NULL DEFAULT 0,
+  total_cost_estimated NUMERIC(14, 2) NOT NULL DEFAULT 0,
+  notes TEXT,
+  cancellation_reason TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS order_items (
+  id VARCHAR(50) PRIMARY KEY,
+  order_id VARCHAR(50) NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  product_id VARCHAR(50) NOT NULL REFERENCES products(id),
+  variant_id VARCHAR(50) REFERENCES product_variants(id),
+  quantity INT NOT NULL DEFAULT 1,
+  unit_price NUMERIC(14, 2) NOT NULL,
+  unit_cost NUMERIC(14, 2) NOT NULL DEFAULT 0,
+  discount NUMERIC(14, 2) NOT NULL DEFAULT 0,
+  subtotal NUMERIC(14, 2) NOT NULL,
+  tax NUMERIC(14, 2) NOT NULL DEFAULT 0,
+  total NUMERIC(14, 2) NOT NULL,
+  notes TEXT,
+  station VARCHAR(50) DEFAULT 'Frituras',
+  status VARCHAR(50) DEFAULT 'PENDIENTE'
+);
+
+CREATE TABLE IF NOT EXISTS order_payments (
+  id VARCHAR(50) PRIMARY KEY,
+  order_id VARCHAR(50) NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  method VARCHAR(50) NOT NULL, -- EFECTIVO, TRANSFERENCIA, TARJETA, OTRO
+  amount NUMERIC(14, 2) NOT NULL,
+  reference VARCHAR(100),
+  cash_tendered NUMERIC(14, 2), -- Monto recibido en efectivo para calcular cambio
+  cash_change NUMERIC(14, 2), -- Cambio devuelto
+  user_id VARCHAR(50) NOT NULL REFERENCES users(id),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 9. MOVIMIENTOS DE INVENTARIO (KÁRDEX)
+CREATE TABLE IF NOT EXISTS inventory_movements (
+  id VARCHAR(50) PRIMARY KEY,
+  ingredient_id VARCHAR(50) NOT NULL REFERENCES ingredients(id),
+  type VARCHAR(50) NOT NULL, -- VENTA_DESCUENTO, COMPRA_RECEPCION, DESPERDICIO, AJUSTE_FISICO, DEVOLUCION
+  quantity NUMERIC(14, 4) NOT NULL, -- Positivo si entra, negativo si sale
+  unit VARCHAR(20) NOT NULL,
+  previous_stock NUMERIC(14, 4) NOT NULL,
+  new_stock NUMERIC(14, 4) NOT NULL,
+  unit_cost NUMERIC(14, 2) NOT NULL,
+  total_cost NUMERIC(14, 2) NOT NULL,
+  order_id VARCHAR(50) REFERENCES orders(id),
+  order_item_id VARCHAR(50) REFERENCES order_items(id),
+  reason TEXT,
+  user_id VARCHAR(50) NOT NULL REFERENCES users(id),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 10. COMPRAS Y PROVEEDORES
+CREATE TABLE IF NOT EXISTS suppliers (
+  id VARCHAR(50) PRIMARY KEY,
+  name VARCHAR(150) NOT NULL,
+  contact_name VARCHAR(100),
+  phone VARCHAR(50),
+  email VARCHAR(150),
+  address TEXT,
+  active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS purchase_orders (
+  id VARCHAR(50) PRIMARY KEY, -- OC-000001
+  supplier_id VARCHAR(50) NOT NULL REFERENCES suppliers(id),
+  user_id VARCHAR(50) NOT NULL REFERENCES users(id),
+  status VARCHAR(50) NOT NULL DEFAULT 'SOLICITADA', -- SOLICITADA, RECIBIDA, PARCIAL, CANCELADA
+  invoice_number VARCHAR(100),
+  total NUMERIC(14, 2) NOT NULL DEFAULT 0,
+  notes TEXT,
+  ordered_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  received_at TIMESTAMP WITH TIME ZONE
+);
+
+CREATE TABLE IF NOT EXISTS purchase_order_items (
+  id VARCHAR(50) PRIMARY KEY,
+  purchase_order_id VARCHAR(50) NOT NULL REFERENCES purchase_orders(id) ON DELETE CASCADE,
+  ingredient_id VARCHAR(50) NOT NULL REFERENCES ingredients(id),
+  quantity_ordered NUMERIC(14, 4) NOT NULL,
+  quantity_received NUMERIC(14, 4) DEFAULT 0,
+  unit_price NUMERIC(14, 2) NOT NULL,
+  total NUMERIC(14, 2) NOT NULL
+);
+
+-- 11. DESPERDICIOS Y MERMAS
+CREATE TABLE IF NOT EXISTS waste_records (
+  id VARCHAR(50) PRIMARY KEY,
+  ingredient_id VARCHAR(50) NOT NULL REFERENCES ingredients(id),
+  quantity NUMERIC(14, 4) NOT NULL,
+  unit VARCHAR(20) NOT NULL,
+  cost_unit NUMERIC(14, 2) NOT NULL,
+  total_cost NUMERIC(14, 2) NOT NULL,
+  reason VARCHAR(100) NOT NULL, -- DANO, VENCIMIENTO, ERROR_PREPARACION, CONSUMO_INTERNO, OTRO
+  notes TEXT,
+  user_id VARCHAR(50) NOT NULL REFERENCES users(id),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 12. GASTOS OPERATIVOS
+CREATE TABLE IF NOT EXISTS expenses (
+  id VARCHAR(50) PRIMARY KEY,
+  category VARCHAR(100) NOT NULL, -- ARRIENDO, SERVICIOS, NOMINA, TRANSPORTE, MANTENIMIENTO, PUBLICIDAD, OTROS
+  description TEXT NOT NULL,
+  amount NUMERIC(14, 2) NOT NULL,
+  payment_method VARCHAR(50) NOT NULL DEFAULT 'EFECTIVO', -- EFECTIVO, TRANSFERENCIA
+  paid_from_cash_register_id VARCHAR(50) REFERENCES cash_registers(id),
+  user_id VARCHAR(50) NOT NULL REFERENCES users(id),
+  date DATE NOT NULL DEFAULT CURRENT_DATE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 13. AUDITORÍA
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id VARCHAR(50) PRIMARY KEY,
+  user_id VARCHAR(50) NOT NULL REFERENCES users(id),
+  action VARCHAR(100) NOT NULL,
+  entity VARCHAR(100) NOT NULL,
+  entity_id VARCHAR(50),
+  details JSONB,
+  ip_address VARCHAR(50),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 14. CONFIGURACIÓN DEL RESTAURANTE
+CREATE TABLE IF NOT EXISTS restaurant_settings (
+  key VARCHAR(100) PRIMARY KEY,
+  value JSONB NOT NULL,
+  description TEXT,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
