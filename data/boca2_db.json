@@ -8,6 +8,13 @@
       ]
     },
     {
+       "id": "admin",
+      "name": "Andres moreno",
+      "permissions": [
+        "all"
+      ]
+      },
+    {
       "id": "cajero",
       "name": "Cajero",
       "permissions": [
@@ -19,7 +26,7 @@
     },
     {
       "id": "mesero",
-      "name": "Mesero / Salón",
+      "name": "Mesero",
       "permissions": [
         "pos",
         "orders_view"
@@ -93,18 +100,18 @@
   ],
   "categories": [
     {
-      "id": "cat-alitas",
-      "name": "Alitas",
-      "slug": "alitas",
-      "icon": "Flame",
+     "id": "cat-entradas",
+      "name": "entradas",
+      "slug": "entradas",
+      "icon": "Sparkles",
       "sort_order": 1,
       "active": true
     },
     {
-      "id": "cat-combos",
-      "name": "Combos Boca2",
-      "slug": "combos",
-      "icon": "Sparkles",
+      "id": "cat-alitas",
+      "name": "Alitas",
+      "slug": "alitas",
+      "icon": "Flame",
       "sort_order": 2,
       "active": true
     },
@@ -163,7 +170,71 @@
       "icon": "PlusCircle",
       "sort_order": 9,
       "active": true
-    }
+    },
+     {
+      "id": "Menu infatil",
+      "name": "Menu infatil",
+      "slug": "Menu infatil",
+      "icon": "Droplet",
+      "sort_order": 10,
+      "active": true
+    },
+    {
+      "id": "Platos a la carta",
+      "name": "Platos a la carta",
+      "slug": "Platos a la carta",
+      "icon": "Droplet",
+      "sort_order": 11,
+      "active": true
+    },
+    {
+      "id": "Pinchos",
+      "name": "Pinchos",
+      "slug": "Pinchos",
+      "icon": "Droplet",
+      "sort_order": 12,
+      "active": true
+    },
+    {
+      "id": "Dorilocos",
+      "name": "Dorilocos",
+      "slug": "Dorilocos",
+      "icon": "Drople",
+      "sort_order": 13,
+      "active": true
+    },
+    {
+    "id": "Dorilocos",
+      "name": "Dorilocos",
+      "slug": "Dorilocos",
+      "icon": "Drople",
+      "sort_order": 14,
+      "active": true
+     },
+    {
+    "id": "cajas",
+      "name": "cajas",
+      "slug": "cajas",
+      "icon": "Drople",
+      "sort_order": 15,
+      "active": true
+     },
+     {
+    "id": "sanchocho",
+      "name": "sancocho",
+      "slug": "sancocho",
+      "icon": "Drople",
+      "sort_order": 16,
+      "active": true
+     },
+    {
+    "id": "carne al barril",
+      "name": "carne al barril",
+      "slug": "carne al barril",
+      "icon": "Drople",
+      "sort_order": 17,
+      "active": true
+     },
   ],
   "ingredients": [
     {
