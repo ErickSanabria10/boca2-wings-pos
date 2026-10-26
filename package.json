@@ -1,22 +1,17 @@
 {
   "name": "boca2-wings-pos",
   "version": "1.0.0",
-  "description": "Sistema integral de gestión para restaurante de comidas rápidas Boca2 Wings",
+  "description": "Punto de venta para Boca2 Wings con CRUD persistente en SQLite",
+  "main": "server/index.js",
   "type": "module",
   "scripts": {
-    "start": "node server/index.js",
-    "dev": "node server/index.js",
-    "test": "node --test tests/pos.test.js"
+    "start": "node server/index.js"
   },
-  "keywords": [
-    "pos",
-    "restaurant",
-    "wings",
-    "kds",
-    "inventory",
-    "excel-export",
-    "colombia-cop"
-  ],
-  "author": "Antigravity Team",
-  "license": "ISC"
+  "author": "Tu Nombre",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "sqlite3": "^5.1.7"
+  }
 }
